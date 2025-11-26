@@ -1,30 +1,32 @@
-# ---- Backend ----
-FROM node:18 AS backend
-WORKDIR /app/backend
-COPY backend/package.json backend/package-lock.json* ./
+# -------------------------------------
+# 1) Build frontend
+# -------------------------------------
+FROM node:18 AS frontend-build
+
+WORKDIR /app
+COPY ./frontend ./frontend
+
+WORKDIR /app/frontend
 RUN npm install
-COPY backend/ .
-EXPOSE 4000
+RUN npm run build
 
-# ---- Frontend ----
-FROM nginx:alpine AS frontend
-COPY frontend/ /usr/share/nginx/html
+# -------------------------------------
+# 2) Build backend (Express API + serving static frontend)
+# -------------------------------------
+FROM node:18 AS backend
 
-# ---- Combined Runtime ----
-FROM node:18
 WORKDIR /app
 
-# Copy backend
-COPY --from=backend /app/backend ./backend
+# Copy backend code
+COPY ./backend ./backend
 
-# Copy frontend static site
-RUN mkdir -p ./frontend
-COPY --from=frontend /usr/share/nginx/html ./frontend
+# Copy built frontend into backend public folder
+COPY --from=frontend-build /app/frontend/dist ./backend/public
 
-# Install a simple static server for frontend
-RUN npm install -g serve
+WORKDIR /app/backend
 
-# Startup script
-CMD \
-  (cd backend && node server.js &) && \
-  serve -s frontend -l 8080
+RUN npm install
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
