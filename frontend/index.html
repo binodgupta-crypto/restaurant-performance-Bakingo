@@ -1,0 +1,16 @@
+<!DOCTYPE html><html><body>
+<h2>Restaurant Daily Entry</h2>
+<form id="f">
+<input id="outlet" placeholder="Outlet"><br>
+<input id="sales" placeholder="Sales"><br>
+<button>Submit</button>
+</form>
+<script>
+document.getElementById('f').onsubmit=async(e)=>{
+ e.preventDefault();
+ const payload={ outlet:outlet.value, sales:sales.value, ts:Date.now() };
+ await fetch('/api/records',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ alert('Saved');
+};
+</script>
+</body></html>
