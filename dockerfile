@@ -1,32 +1,40 @@
-# -------------------------------------
-# 1) Build frontend
-# -------------------------------------
+# ================================
+# STEP 1 – Build Frontend (React)
+# ================================
 FROM node:18 AS frontend-build
 
-WORKDIR /app
-COPY ./frontend ./frontend
-
 WORKDIR /app/frontend
+
+COPY frontend/package*.json ./
 RUN npm install
+
+COPY frontend .
 RUN npm run build
 
-# -------------------------------------
-# 2) Build backend (Express API + serving static frontend)
-# -------------------------------------
-FROM node:18 AS backend
-
-WORKDIR /app
-
-# Copy backend code
-COPY ./backend ./backend
-
-# Copy built frontend into backend public folder
-COPY --from=frontend-build /app/frontend/dist ./backend/public
+# ================================
+# STEP 2 – Build Backend (Express/Node)
+# ================================
+FROM node:18 AS backend-build
 
 WORKDIR /app/backend
 
+COPY backend/package*.json ./
 RUN npm install
 
-EXPOSE 3000
+COPY backend .
+
+# Copy frontend build into backend public folder
+COPY --from=frontend-build /app/frontend/dist ./public
+
+# ================================
+# STEP 3 – Final Production Image
+# ================================
+FROM node:18
+
+WORKDIR /app
+
+COPY --from=backend-build /app/backend ./
+
+EXPOSE 8080
 
 CMD ["node", "server.js"]
